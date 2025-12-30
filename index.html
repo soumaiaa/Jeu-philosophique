@@ -3,285 +3,35 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Jeu philosophique</title>
-<style>
-
-  body { font-family: 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif; background: #f5f5f5; margin:0; padding:0; display:flex; flex-direction:column; align-items:center; min-height:100vh;}
-  h1 { margin-top:30px; text-align:center; }
-  h2 {font-size: 1.2rem; text-align: center; margin-bottom: 1rem; color: #555; }
-  #controls { margin:20px 0; display:flex; gap:10px; flex-wrap:wrap; justify-content:center;}
-  button { padding:12px 24px; font-size:16px; border:none; border-radius:8px; cursor:pointer; transition:0.3s; }
-  button:hover { opacity:0.85; }
-  #startBtn { background:#4caf50; color:white; min-width:150px; /* largeur minimale fixe */ }
-
-.flag {
-  transition: 0.3s;
-  cursor: pointer;
-}
-.flag.active {
-  width:50px;
-  height:50px;
-  background-color: black;
-}
-#langBtn {
-  display: flex;
-  gap: 10px;
-  justify-content: center;
-  align-items: center;
-  cursor: pointer;
-}
-  #shareBtn { background:#2196f3; color:white; display:none; }
-  #question { margin:20px 0; font-size:18px; text-align:center; max-width:800px; }
-  #choices { display:flex; flex-direction:column; gap:10px; align-items:center; margin-bottom:20px; }
-  #choices button { width:300px; max-width:80%; background:#ff6f61; color:white; font-weight:bold; }
-  #stats { margin:10px 0; font-size:16px; }
-  #result { margin:20px; text-align:center; white-space:pre-line; font-size:16px; }
-  @media(max-width:600px){ #choices button { width:90%; font-size:14px; } }
-  @media screen and (max-width: 600px) { h1 { font-size: 1.5rem; } h2 { font-size: 1rem; } button { width: 90%; font-size: 1rem; } }
-</style>
+<link rel="stylesheet" href="/style.css">
+<title>Jeu Philosophique</title>
+<script src="script.js" defer></script>
 </head>
+
 <body>
 
-<h1 id="title">Jeu philosophique</h1>
-<h2 id="gameSubtitle">Répondez aux questions et découvrez votre personnalité</h2>
-<div id="controls">
-  <button id="startBtn">Commencer</button>
-<div id="langBtn" style="display:flex; gap:10px; cursor:pointer;">
-  <img src="/FR.png" class="flag active" data-lang="fr" alt="FR" style="width:40px; height:40px;"/>
-  <img src="/AR.png" class="flag" data-lang="ar" alt="AR" style="width:40px; height:40px;"/>
-  <img src="/EN.png" class="flag" data-lang="en" alt="EN" style="width:40px; height:40px;"/>
+<div class="game-container">
+  <div class="game-card">
+
+    <h1 id="title">Jeu philosophique</h1>
+    <h2 id="subtitle">Répondez aux questions et découvrez votre personnalité</h2>
+
+    <div class="lang-switch">
+      <button class="lang-btn active" data-lang="fr">FR</button>
+      <button class="lang-btn" data-lang="ar">AR</button>
+      <button class="lang-btn" data-lang="en">EN</button>
+    </div>
+
+    <button id="startBtn" class="start-btn">Commencer</button>
+
+    <div id="stats">🧠 50 | ⚖️ 50 | 🕯️ 50</div>
+    <div id="question"></div>
+    <div id="choices"></div>
+    <div id="result"></div>
+
+    <button id="shareBtn" class="share-btn">📤 Partager</button>
+
+  </div>
 </div>
-  <button id="shareBtn">📤 Partager</button>
-</div>
-
-<div id="stats">🧠 50 | ⚖️ 50 | 🕯️ 50</div>
-<div id="question"></div>
-<div id="choices"></div>
-<div id="result"></div>
-
-<script>
-let step = 0;
-let wa3y=50, qana3a=50, ma3na=50;
-
-// 20 questions philosophiques bilingues
-const stages = [
-  {
-    fr:"Tu te réveilles sans nom, sans passé.\nSuivez-vous vos choix ou ce qu’on vous impose ?",
-    ar:"تستيقظ دون اسم، دون ماضٍ.\nهل أنت نتيجة اختياراتك أم ما فُرض عليك؟",
-    en:"You wake up with no name, no past.\nDo you follow your choices or what is imposed on you?",
-    choices:[
-      {fr:"Je choisis mes choix", ar:"أنا نتيجة اختياراتي", en:"I choose my own path", points:{wa3y:10,qana3a:0,ma3na:5}},
-      {fr:"Je subis les circonstances", ar:"أنا ضحية الظروف", en:"I suffer the circumstances", points:{wa3y:-5,qana3a:-5,ma3na:0}},
-      {fr:"Je ne sais pas", ar:"لا أعلم بعد", en:"I don't know yet", points:{wa3y:0,qana3a:5,ma3na:5}}
-    ]
-  },
-  {
-    fr:"Deux chemins s’offrent à toi : clair ou mystérieux?",
-    ar:"طريقان أمامك: واضح أم غامض؟",
-    en:"Two paths lie ahead: clear or mysterious?",
-    choices:[
-      {fr:"Clair", ar:"واضح", en:"Clear", points:{wa3y:-5,qana3a:10,ma3na:0}},
-      {fr:"Mystérieux", ar:"غامض", en:"Mysterious", points:{wa3y:10,qana3a:0,ma3na:10}},
-      {fr:"Je réfléchis", ar:"أتوقف وأفكر", en:"I reflect", points:{wa3y:5,qana3a:5,ma3na:5}}
-    ]
-  },
-  {
-    fr:"Cherches-tu le bonheur ou la vérité ?",
-    ar:"هل تبحث عن السعادة أم الحقيقة؟",
-    en:"Are you seeking happiness or truth?",
-    choices:[
-      {fr:"Bonheur", ar:"السعادة", en:"Happiness", points:{wa3y:-5,qana3a:10,ma3na:0}},
-      {fr:"Vérité", ar:"الحقيقة", en:"Truth", points:{wa3y:10,qana3a:-5,ma3na:10}},
-      {fr:"Les deux sont une illusion", ar:"كلاهما وهم", en:"Both are an illusion", points:{wa3y:5,qana3a:0,ma3na:-5}}
-    ]
-  },
-  {
-    fr:"Certaines décisions ont blessé d’autres. Le regret est-il une faiblesse?",
-    ar:"بعض قراراتك أضرت بالآخرين. هل الندم ضعف؟",
-    en:"Some decisions have hurt others. Is regret a weakness?",
-    choices:[
-      {fr:"Oui", ar:"نعم، الندم ضعف", en:"Yes, regret is weakness", points:{wa3y:-10,qana3a:10,ma3na:-5}},
-      {fr:"Non, conscience", ar:"لا، الندم وعي", en:"No, consciousness", points:{wa3y:10,qana3a:-5,ma3na:5}},
-      {fr:"Ne change rien", ar:"الندم لا يغير شيئًا", en:"Do not change anything", points:{wa3y:0,qana3a:0,ma3na:-5}}
-    ]
-  },
-  {
-    fr:"On te donne une chance de revenir sur une décision passée. Le fais-tu ?",
-    ar:"تُمنح فرصة لإعادة قرار قديم. هل تفعل؟",
-    en:"You are given a chance to revisit a past decision. Do you take it?",
-    choices:[
-      {fr:"Je refais le choix", ar:"أعيد القرار", en:"I redo the choice", points:{wa3y:-5,qana3a:0,ma3na:-10}},
-      {fr:"Je garde tout ce que j’étais", ar:"أحتفظ بكل ما كنت", en:"I keep everything I was", points:{wa3y:10,qana3a:5,ma3na:5}},
-      {fr:"J’hésite", ar:"أتردد", en:"I hesitate", points:{wa3y:0,qana3a:-5,ma3na:0}}
-    ]
-  },
-  {
-    fr:"À la fin, personne ne te voit. Fais-tu face à toi-même honnêtement ?",
-    ar:"في النهاية، لا أحد يراك. هل تواجه نفسك بصراحة؟",
-    en:"In the end, no one sees you. Do you face yourself honestly?",
-    choices:[
-      {fr:"Me réconcilier", ar:"أصالح نفسي", en:"I reconcile with myself", points:{wa3y:10,qana3a:10,ma3na:10}},
-      {fr:"Je fuis", ar:"أهرب من السؤال", en:"I run away", points:{wa3y:-10,qana3a:0,ma3na:-10}},
-      {fr:"Je souris en silence", ar:"أبتسم بصمت", en:"I smile silently", points:{wa3y:5,qana3a:5,ma3na:0}}
-    ]
-  },
-  {
-    fr:"Tu vois un pont menant à la lumière. Traverses-tu ?",
-    ar:"ترى جسرًا يؤدي إلى ضوء. هل تعبره؟",
-    en:"You see a bridge leading to light. Do you cross it?",
-    choices:[
-      {fr:"Oui", ar:"نعم", en:"Yes", points:{wa3y:10,qana3a:5,ma3na:10}},
-      {fr:"Non", ar:"لا", en:"No", points:{wa3y:-5,qana3a:-5,ma3na:-5}},
-      {fr:"J’attends", ar:"أنتظر", en:"I wait", points:{wa3y:0,qana3a:0,ma3na:0}}
-    ]
-  },
-  {
-    fr:"Une voix étrange t’appelle : Continuer ou changer ?",
-    ar:"صوت غريب يناديك: تابع أم عدل؟",
-    en:"A strange voice calls you: Continue or change?",
-    choices:[
-      {fr:"Continuer", ar:"أتابع", en:"Continue", points:{wa3y:5,qana3a:0,ma3na:5}},
-      {fr:"Changer", ar:"أغير", en:"Change", points:{wa3y:0,qana3a:5,ma3na:0}},
-      {fr:"Se taire", ar:"أصمت", en:"Be silent", points:{wa3y:0,qana3a:0,ma3na:0}}
-    ]
-  },
-  {
-    fr:"Une clé t’est proposée. L’ouvres-tu ?",
-    ar:"يُعرض عليك مفتاح. هل تفتحه؟",
-    en:"A key is offered to you. Do you open it?",
-    choices:[
-      {fr:"Oui", ar:"نعم", en:"Yes", points:{wa3y:10,qana3a:0,ma3na:5}},
-      {fr:"Non", ar:"لا", en:"No", points:{wa3y:-5,qana3a:5,ma3na:-5}},
-      {fr:"Je réfléchis", ar:"أفكر", en:"I think", points:{wa3y:0,qana3a:0,ma3na:0}}
-    ]
-  },
-  {
-    fr:"Enfin, devant le miroir, te vois-tu honnêtement ?",
-    ar:"أخيرًا، تقف أمام مرآة نفسك. هل ترى نفسك بصدق؟",
-    en:"Finally, in front of the mirror, do you see yourself honestly?",
-    choices:[
-      {fr:"Oui", ar:"نعم", en:"Yes", points:{wa3y:10,qana3a:10,ma3na:10}},
-      {fr:"Non", ar:"لا", en:"No", points:{wa3y:-10,qana3a:-5,ma3na:-10}},
-      {fr:"Je souris en silence", ar:"أبتسم بصمت", en:"I smile silently", points:{wa3y:5,qana3a:0,ma3na:0}}
-    ]
-  }
-  // Ajoute les 10 questions restantes ici...
-];
-
-
-// Mélanger les questions
-function shuffle(array){for(let i=array.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[array[i],array[j]]=[array[j],array[i]];}}
-
-// Afficher la question
-function showQuestion(){
-  if(step>=stages.length){ showResult(); return; }
-  const s = stages[step];
-  document.getElementById("question").innerText = s[lang];
-  const choicesDiv = document.getElementById("choices");
-  choicesDiv.innerHTML="";
-  s.choices.forEach(c=>{
-    const btn = document.createElement("button");
-    btn.innerText = c[lang];
-    btn.onclick = ()=>{
-      wa3y += c.points.wa3y;
-      qana3a += c.points.qana3a;
-      ma3na += c.points.ma3na;
-      step++;
-      showQuestion();
-    };
-    choicesDiv.appendChild(btn);
-  });
-  document.getElementById("stats").innerText = `🧠 ${wa3y} | ⚖️ ${qana3a} | 🕯️ ${ma3na}`;
-}
-let started = false;
-// Bouton démarrer / recommencer
-document.getElementById("startBtn").onclick = ()=>{
-  step=0; wa3y=50; qana3a=50; ma3na=50;
-  shuffle(stages);
-  document.getElementById("result").innerText="";
-  document.getElementById("shareBtn").style.display="none";
-  document.getElementById("startBtn").style.display="none";
-  started = true; // le jeu a commencé
-  showQuestion();
-};
-
-// Changer la langue
-let lang = "fr"; // langue par défaut
-
-const flags = document.querySelectorAll("#langBtn .flag");
-flags.forEach(flag => {
-  flag.addEventListener("click", ()=>{
-    lang = flag.dataset.lang;
-    flags.forEach(f => f.classList.remove("active"));
-    flag.classList.add("active");
-
-    // Mettre à jour les textes du jeu selon la langue
-    document.getElementById("title").innerText = (lang==="fr")?"Jeu philosophique":(lang==="ar")?"لعبة الفلسفة":"Philosophical Game";
-    document.getElementById("gameSubtitle").innerText = (lang==="fr")?"Répondez aux questions et découvrez votre personnalité":(lang==="ar")?"أجب على الأسئلة واكتشف شخصيتك":"Answer the questions and discover your personality";
-    document.getElementById("startBtn").innerText = (lang==="fr")?"Commencer":(lang==="ar")?"ابدأ اللعبة":"Start";
-    document.getElementById("shareBtn").innerText = (lang==="fr")?"📤 Partager":(lang==="ar")?"📤 مشاركة":"📤 Share";
-
-    // Si le jeu a commencé, mettre à jour la question ou le résultat
-    if(started){
-      if(step < stages.length) showQuestion();
-      else showResult();
-    }
-  });
-});
-
-
-
-
-// Fonction pour mettre à jour tous les textes
-function updateTexts(){
-  const titles = {
-    fr: {title:"Jeu philosophique", subtitle:"Répondez aux questions et découvrez votre personnalité", start:"Commencer", share:"📤 Partager", restart:"Recommencer"},
-    ar: {title:"لعبة الفلسفة", subtitle:"أجب على الأسئلة واكتشف شخصيتك", start:"ابدأ اللعبة", share:"📤 مشاركة", restart:"ابدأ من جديد"},
-    en: {title:"Philosophical Game", subtitle:"Answer the questions and discover your personality", start:"Start", share:"📤 Share", restart:"Restart"}
-  };
-  
-  document.getElementById("title").innerText = titles[lang].title;
-  document.getElementById("gameSubtitle").innerText = titles[lang].subtitle;
-  if(!started) document.getElementById("startBtn").innerText = titles[lang].start;
-  else document.getElementById("startBtn").innerText = titles[lang].restart;
-  document.getElementById("shareBtn").innerText = titles[lang].share;
-
-  if(started){
-    if(step < stages.length) showQuestion();
-    else showResult();
-  }
-}
-
-
-// Afficher le résultat
-function showResult(){
-  const ar = `🧠 ${wa3y>=70?"وعي مرتفع":wa3y>=50?"وعي متوسط":"وعي منخفض"}\n⚖️ ${qana3a>=70?"قناعة قوية":qana3a>=50?"قناعة متوسطة":"قناعة ضعيفة"}\n🕯️ ${ma3na>=70?"بحث عميق":ma3na>=50?"بحث متوسط":"غياب البحث"}\n\nتذكر: كل اختيار يشكل شخصيتك.`;
-  
-  const fr = `🧠 ${wa3y>=70?"Conscience élevée":wa3y>=50?"Conscience moyenne":"Conscience faible"}\n⚖️ ${qana3a>=70?"Conviction forte":qana3a>=50?"Conviction moyenne":"Conviction faible"}\n🕯️ ${ma3na>=70?"Sens profond":ma3na>=50?"Sens moyen":"Sens absent"}\n\nSouviens-toi : chaque choix forme ta personnalité.`;
-  
-  const en = `🧠 ${wa3y>=70?"High awareness":wa3y>=50?"Medium awareness":"Low awareness"}\n⚖️ ${qana3a>=70?"Strong conviction":qana3a>=50?"Medium conviction":"Weak conviction"}\n🕯️ ${ma3na>=70?"Deep sense":ma3na>=50?"Medium sense":"No sense"}\n\nRemember: every choice shapes your personality.`;
-
-  document.getElementById("choices").innerHTML="";
-  document.getElementById("question").innerText = (lang==="fr")?"=== Analyse détaillée ===":(lang==="ar")?"=== النتيجة التفصيلية ===":"=== Detailed Analysis ===";
-  document.getElementById("result").innerText = (lang==="fr")?fr:(lang==="ar")?ar:en;
-
-  document.getElementById("shareBtn").style.display="inline-block";
-  document.getElementById("startBtn").style.display="inline-block";
-  document.getElementById("startBtn").innerText = (lang==="fr")?"Recommencer":(lang==="ar")?"ابدأ من جديد":"Restart";
-}
-
-// Bouton partage
-document.getElementById("shareBtn").onclick = ()=>{
-  const url = encodeURIComponent(window.location.href);
-  const text = encodeURIComponent(
-    (lang==="fr") ? `Mon résultat du jeu philosophique:\n🧠 ${wa3y} | ⚖️ ${qana3a} | 🕯️ ${ma3na}` :
-    (lang==="ar") ? `نتيجتي في لعبة الفلسفة:\n🧠 ${wa3y} | ⚖️ ${qana3a} | 🕯️ ${ma3na}` :
-    `My philosophical game result:\n🧠 ${wa3y} | ⚖️ ${qana3a} | 🕯️ ${ma3na}`
-  );
-  window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}&quote=${text}`, "_blank");
-};
-
-</script>
-
 </body>
 </html>
